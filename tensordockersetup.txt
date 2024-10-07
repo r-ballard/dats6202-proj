@@ -1,0 +1,23 @@
+https://www.tensorflow.org/install/docker
+
+https://docs.docker.com/desktop/gpu/
+Install nvidia driver:
+https://www.nvidia.com/en-us/drivers/
+
+Install Windows Subsystem For Linux
+wsl --update
+
+
+docker run -it -p 8888:8888 tensorflow/tensorflow:nightly-jupyter
+copy instructions
+
+
+
+docker run -it --rm -v C:\Users\hardcase\Desktop\dev\repos\dats6202-proj\:/tf/ -p 8888:8888 tensorflow/tensorflow:nightly-jupyter
+
+! apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
+!pip install -r '/tf/requirements.txt'
+
+sys.path.append('/tf/src/helpers')
+
+import helpers

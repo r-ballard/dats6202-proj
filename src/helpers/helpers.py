@@ -34,7 +34,37 @@ class Timer:
         self.logger.info("%s took %0.2f seconds", self.function, self.interval.total_seconds())
 
 
+def rotate_image(mat, angle):
+    '''
+    https://stackoverflow.com/questions/9041681/opencv-python-rotate-image-by-x-degrees-around-specific-point
+    '''
+    height, width = mat.shape[:2]
+    image_center = (width / 2, height / 2)
+
+    rotation_mat = cv2.getRotationMatrix2D(image_center, angle, 1)
+
+    radians = math.radians(angle)
+    sin = math.sin(radians)
+    cos = math.cos(radians)
+    bound_w = int((height * abs(sin)) + (width * abs(cos)))
+    bound_h = int((height * abs(cos)) + (width * abs(sin)))
+
+    rotation_mat[0, 2] += ((bound_w / 2) - image_center[0])
+    rotation_mat[1, 2] += ((bound_h / 2) - image_center[1])
+
+    return cv2.warpAffine(mat, rotation_mat, (bound_w, bound_h), borderValue=(0,0,0))
+
+
+def draw_dot(img, radius, offset_from_center):
+    center = np.array([np.uint8((img.shape[0] - 1)/2), np.uint8((img.shape[1] - 1)/2)])
+    dot_position = center - np.array(offset_from_center)
+    return cv2.circle(img, tuple(dot_position), radius=radius, color=(1,1,1), thickness=-1)
+
+
 def build_kernel(side, size, dot_radius, ofc, border, angle):
+    '''
+    size of 33, off-center of 7 is ~1/4 of the way to the edge of the image (7/33). Dice faces have empty space on border which accounts for remaining
+    '''
     
     ofc = 7
     
@@ -156,79 +186,6 @@ def pad_kernels(kernels):
                 kernels[kernel_id] = np.delete(kernels[kernel_id], 1, 1)
                 
     return kernels
-
-
-def draw_dot(img, radius, offset_from_center):
-    center = np.array([np.uint8((img.shape[0] - 1)/2), np.uint8((img.shape[1] - 1)/2)])
-    dot_position = center - np.array(offset_from_center)
-    return cv2.circle(img, tuple(dot_position), radius=radius, color=(1,1,1), thickness=-1)
-
-
-def build_kernel(side, size, dot_radius, ofc, border, angle):
-    
-    ofc = 7
-    
-    img = np.full([size, size], 2, dtype=np.uint8)   
-    if side == 1:
-        img = draw_dot(img, dot_radius, [0,0])
-    elif side == 2:
-        img = draw_dot(img, dot_radius, [ofc,ofc])
-        img = draw_dot(img, dot_radius, [-ofc,-ofc])
-    elif side == 3:
-        img = draw_dot(img, dot_radius, [0,0])
-        img = draw_dot(img, dot_radius, [ofc,ofc])
-        img = draw_dot(img, dot_radius, [-ofc,-ofc])
-    elif side == 4:
-        img = draw_dot(img, dot_radius, [ofc,ofc])
-        img = draw_dot(img, dot_radius, [-ofc,-ofc])
-        img = draw_dot(img, dot_radius, [-ofc,ofc])
-        img = draw_dot(img, dot_radius, [ofc,-ofc])
-    elif side == 5:
-        img = draw_dot(img, dot_radius, [ofc,ofc])
-        img = draw_dot(img, dot_radius, [-ofc,-ofc])
-        img = draw_dot(img, dot_radius, [-ofc,ofc])
-        img = draw_dot(img, dot_radius, [ofc,-ofc])
-        img = draw_dot(img, dot_radius, [0,0])
-    elif side == 6:
-        
-        off_v = 1
-        off_h = 2
-        
-        img = np.full([size,size],2, dtype=np.uint8)
-        img = draw_dot(img, dot_radius, [ofc - off_v,ofc + off_h])
-        img = draw_dot(img, dot_radius, [-ofc + off_v,-ofc - off_h])
-        img = draw_dot(img, dot_radius, [-ofc + off_v,ofc + off_h])
-        img = draw_dot(img, dot_radius, [ofc - off_v,-ofc - off_h])
-        img = draw_dot(img, dot_radius, [ofc - off_v,0])
-        img = draw_dot(img, dot_radius, [-ofc + off_v,0])
-        
-    img = rotate_image(img, angle)
-    img = np.int8(img)
-    
-    img[img == 1] = 10
-    img[img == 2] = 20
-    img[img == 20] = 1
-    img[img == 10] = -1
-    
-    return img
-
-
-def rotate_image(mat, angle):
-    height, width = mat.shape[:2]
-    image_center = (width / 2, height / 2)
-
-    rotation_mat = cv2.getRotationMatrix2D(image_center, angle, 1)
-
-    radians = math.radians(angle)
-    sin = math.sin(radians)
-    cos = math.cos(radians)
-    bound_w = int((height * abs(sin)) + (width * abs(cos)))
-    bound_h = int((height * abs(cos)) + (width * abs(sin)))
-
-    rotation_mat[0, 2] += ((bound_w / 2) - image_center[0])
-    rotation_mat[1, 2] += ((bound_h / 2) - image_center[1])
-
-    return cv2.warpAffine(mat, rotation_mat, (bound_w, bound_h), borderValue=(0,0,0))
 
 
 def build_dice_kernels(size=30, radius=3, ofc=7, border=2):
